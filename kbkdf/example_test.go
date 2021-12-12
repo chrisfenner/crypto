@@ -6,11 +6,9 @@ package kbkdf_test
 
 import (
 	"bytes"
-	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
-	"hash"
 
 	"golang.org/x/crypto/kbkdf"
 )
@@ -24,21 +22,18 @@ func Example_usage() {
 	// Cryptographically secure primary secret.
 	secret := []byte{0x00, 0x01, 0x02, 0x03} // i.e. NOT this.
 
-	// Keyed pseudorandom function for the KDF, in this case HMAC.
-	hmac := func() hash.Hash { return hmac.New(h, secret) }
-
-	// Non-secret context info, optional (can be nil).
-	context := []byte("kbkdf example")
+	// Non-secret label identifying the purpose, optional (can be nil).
+	label := []byte("kbkdf example")
 
 	// Generate three 128-bit derived keys.
 	for i := 0; i < 3; i++ {
-		// Non-secret label, optional (can be nil).
+		// Non-secret derivation context, optional (can be nil).
 		// Recommended: hash-length random value.
-		label := make([]byte, h().Size())
-		if _, err := rand.Read(label); err != nil {
+		context := make([]byte, h().Size())
+		if _, err := rand.Read(context); err != nil {
 			panic(err)
 		}
-		key := kbkdf.Counter(hmac, 16, label, context)
+		key := kbkdf.HMACCounter(sha256.New, 16, secret, label, context)
 		fmt.Printf("Key #%d: %v\n", i+1, !bytes.Equal(key, make([]byte, 16)))
 	}
 
